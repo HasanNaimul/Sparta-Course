@@ -150,6 +150,12 @@ def ask_with_tools(question: str) -> dict:
             ],
         })
 
-    raise RuntimeError(
-        "Tool-use loop limit reached"
-    )
+    # The model used all allowed iterations without finishing
+    return {
+        "answer": None,
+        "completed": False,
+        "tool_calls_made": tool_calls_made,
+        "input_tokens": total_input_tokens,
+        "output_tokens": total_output_tokens,
+        "stop_reason": "max_iterations",
+    }
