@@ -13,10 +13,7 @@ class Settings(BaseSettings):
     financial_stale_days: int = 180
     chroma_path: str = "./chroma_store"
 
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-    )
+    model_config = SettingsConfigDict(env_file=".env",env_file_encoding="utf-8",)
 
 
 settings = Settings()
