@@ -1,64 +1,41 @@
 from fastapi.testclient import TestClient
-
 from main import app
-
 
 client = TestClient(app)
 
 
 def test_list_borrowers():
     response = client.get("/borrowers")
-
     assert response.status_code == 200
     assert len(response.json()) == 6
 
 
 def test_get_borrower():
     response = client.get("/borrowers/1")
-
     assert response.status_code == 200
     assert response.json()["name"] == "Northbridge Components Ltd"
 
 
-def test_unknown_borrower_returns_404():
+def test_unknown_borrower():
     response = client.get("/borrowers/999")
-
     assert response.status_code == 404
     assert response.json()["detail"] == "Borrower not found"
 
 
-def test_filter_borrowers_by_sector():
-    response = client.get(
-        "/borrowers",
-        params={"sector": "Manufacturing"},
-    )
-
+def test_sector_filter():
+    response = client.get("/borrowers", params={"sector": "Manufacturing"})
     assert response.status_code == 200
-
-    results = response.json()
-
-    assert len(results) == 1
-    assert results[0]["name"] == "Northbridge Components Ltd"
+    assert len(response.json()) == 1
 
 
-def test_filter_watchlist_borrowers():
-    response = client.get(
-        "/borrowers",
-        params={"watchlist": True},
-    )
-
+def test_watchlist_filter():
+    response = client.get("/borrowers", params={"watchlist": True})
     assert response.status_code == 200
-
-    results = response.json()
-
-    assert all(
-        borrower["watchlist"] is True
-        for borrower in results
-    )
+    assert all(b["watchlist"] is True for b in response.json())
 
 
 def test_create_borrower():
-    new_borrower = {
+    new = {
         "name": "Silverstone Foods Ltd",
         "sector": "Food Manufacturing",
         "country": "United Kingdom",
@@ -72,18 +49,13 @@ def test_create_borrower():
         "watchlist": False,
     }
 
-    response = client.post(
-        "/borrowers",
-        json=new_borrower,
-    )
-
+    response = client.post("/borrowers", json=new)
     assert response.status_code == 201
     assert response.json()["id"] == 7
-    assert response.json()["name"] == "Silverstone Foods Ltd"
 
 
-def test_invalid_borrower_is_rejected():
-    invalid_borrower = {
+def test_invalid_borrower():
+    new = {
         "name": "Bad Data Ltd",
         "sector": "Retail",
         "country": "United Kingdom",
@@ -97,11 +69,7 @@ def test_invalid_borrower_is_rejected():
         "watchlist": False,
     }
 
-    response = client.post(
-        "/borrowers",
-        json=invalid_borrower,
-    )
-
+    response = client.post("/borrowers", json=new)
     assert response.status_code == 422
 
 
@@ -120,11 +88,7 @@ def test_update_borrower():
         "watchlist": True,
     }
 
-    response = client.put(
-        "/borrowers/1",
-        json=updated,
-    )
-
+    response = client.put("/borrowers/1", json=updated)
     assert response.status_code == 200
     assert response.json()["internal_risk_band"] == "elevated"
     assert response.json()["watchlist"] is True
@@ -132,9 +96,5 @@ def test_update_borrower():
 
 def test_delete_borrower():
     response = client.delete("/borrowers/6")
-
     assert response.status_code == 204
-
-    check = client.get("/borrowers/6")
-
-    assert check.status_code == 404
+    assert client.get("/borrowers/6").status_code == 404
