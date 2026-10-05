@@ -49,3 +49,6 @@ class CovenantCreate(BaseModel):
     testing_frequency: Literal["quarterly","semi_annual","annual",]
 
     last_test_date: date
+
+class StressScenario(BaseModel):
+    ebitda_shock_pct: float = Field(default=-20, ge=-90, le=0)

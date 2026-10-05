@@ -1,11 +1,12 @@
 from fastapi import FastAPI
-from routers import borrowers, facilities, covenants
+from routers import borrowers, facilities, covenants, risk
 
 app = FastAPI(title="Credit Intelligence API", version="1.0.0")
 
 app.include_router(borrowers.router)
 app.include_router(facilities.router)
 app.include_router(covenants.router)
+app.include_router(risk.router)
 
 
 @app.get("/health")

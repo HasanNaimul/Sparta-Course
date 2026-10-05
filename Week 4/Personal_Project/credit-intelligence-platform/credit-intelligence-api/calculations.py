@@ -98,3 +98,19 @@ def calculate_borrower_metrics( borrower: dict, ebitda_shock_pct: float = 0,
     }
 
 
+def evaluate_covenant(value: float, threshold: float, comparison: str) -> dict:
+    headroom = threshold - value if comparison == "maximum" else value - threshold
+    headroom_pct = (headroom / threshold) * 100
+
+    if headroom < 0:
+        status = "breached"
+    elif headroom_pct <= 10:
+        status = "tight"
+    else:
+        status = "comfortable"
+
+    return {
+        "headroom": round(headroom, 2),
+        "headroom_pct": round(headroom_pct, 2),
+        "status": status,
+    }
