@@ -52,3 +52,13 @@ class CovenantCreate(BaseModel):
 
 class StressScenario(BaseModel):
     ebitda_shock_pct: float = Field(default=-20, ge=-90, le=0)
+
+
+class CreditAssessment(BaseModel):
+    risk_level: Literal["low", "moderate", "elevated", "high"]
+    strengths: list[str] = Field(max_length=3)
+    risks: list[str] = Field(max_length=3)
+    covenant_status: Literal["comfortable", "tight", "breached"]
+    outlook: Literal["stable", "watch", "deteriorating"]
+    recommended_action: Literal["maintain", "review", "escalate"]
+    rationale: str = Field(min_length=10, max_length=500)
