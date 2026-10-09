@@ -1,0 +1,59 @@
+==================================================
+QUESTION: Who is the managing partner of Harding & Voss, and how long have they held the role?
+
+--- loose prompt ---
+# Answer
+
+Based on the document provided, **the identity of Harding & Voss's managing partner is not disclosed**, and therefore the length of their tenure cannot be determined.
+
+[doc-101] references the managing partner on several occasions (for example, stating that "the managing partner told the partnership that the priority for the next two years is margin, not size"), but the document does not provide the managing partner's name or any information about how long they have held the role.
+
+To answer your question fully, you would need to consult additional sources such as the firm's website, official announcements, or other documentation that specifically identifies the managing partner and provides details about their appointment date.
+
+refusal: False passed: False
+UNCITED: Based on the document provided, **the identity of Harding & Voss's managing partner is not disclosed**, and therefore the length of their tenure cannot be determined.
+UNCITED: To answer your question fully, you would need to consult additional sources such as the firm's website, official announcements, or other documentation that specifically identifies the managing partner and provides details about their appointment date.
+
+--- grounded prompt ---
+The provided documents do not answer that question.
+
+Whilst the document mentions that "the managing partner told the partnership that the priority for the next two years is margin, not size" [doc-101], it does not identify who the managing partner is or how long they have held the role.
+
+refusal: True passed: True
+==================================================
+QUESTION: How does Harding & Voss's profitability compare with the Magic Circle firms?
+
+--- loose prompt ---
+# Profitability Comparison: Harding & Voss vs. Magic Circle Firms
+
+Based on the available document, **I cannot provide a direct profitability comparison** between Harding & Voss and Magic Circle firms because [doc-101] does not contain any financial data about Magic Circle law firms.
+
+## What We Know About Harding & Voss
+
+The document provides only limited profitability indicators for Harding & Voss itself:
+
+- **Revenue**: $1.24 billion (4.1% growth year-on-year) [doc-101]
+- **Margins**: The managing partner has identified margin improvement as a priority for the next two years, suggesting margins may not currently be optimal [doc-101]
+- **Cost Control**: Technology spending is 3.2% of revenue; write-offs are being tracked and have fallen slightly [doc-101]
+- **Pricing Power**: The firm has resisted discounting disputes rates and believes it can sustain current pricing [doc-101]
+
+However, the document describes the year as one of "consolidation rather than expansion," with growth coming "almost entirely from existing clients" [doc-101], which may indicate margin constraints.
+
+## What Would Be Needed
+
+To answer your question, we would require comparative financial data showing the profitability metrics (profit margins, profit per partner, EBITDA, or similar measures) of Magic Circle firms for the same or comparable periods.
+
+refusal: False passed: False
+UNCITED: # Profitability Comparison: Harding & Voss vs.
+UNCITED: Magic Circle Firms
+UNCITED: ## What We Know About Harding & Voss
+UNCITED: The document provides only limited profitability indicators for Harding & Voss itself:
+UNCITED: ## What Would Be Needed
+UNCITED: To answer your question, we would require comparative financial data showing the profitability metrics (profit margins, profit per partner, EBITDA, or similar measures) of Magic Circle firms for the same or comparable periods.
+
+--- grounded prompt ---
+The provided documents do not answer that question.
+
+The context provided contains detailed information about Harding & Voss's financial performance and strategy [doc-101], but it contains no information about Magic Circle firms' profitability or any comparative analysis between Harding & Voss and Magic Circle firms.
+
+refusal: True passed: True

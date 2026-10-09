@@ -1,0 +1,71 @@
+==================================================
+QUESTION: Who is the managing partner of Harding & Voss, and how long have they held the role?
+
+--- loose prompt ---
+# Answer
+
+Based on the document provided, **the identity of Harding & Voss's managing partner is not disclosed** [doc-101]. The annual strategy review references "the managing partner" in several places, including a statement that "the managing partner told the partnership that the priority for the next two years is margin, not size," but does not provide the managing partner's name or how long they have held the role.
+
+The document focuses on firm performance, practice groups, and strategic direction rather than biographical details about the leadership team. To answer your question about the managing partner's tenure, you would need to consult additional sources beyond this annual strategy review.
+
+refusal: False passed: False
+UNCITED: The annual strategy review references "the managing partner" in several places, including a statement that "the managing partner told the partnership that the priority for the next two years is margin, not size," but does not provide the managing partner's name or how long they have held the role.
+UNCITED: The document focuses on firm performance, practice groups, and strategic direction rather than biographical details about the leadership team.
+UNCITED: To answer your question about the managing partner's tenure, you would need to consult additional sources beyond this annual strategy review.
+
+--- grounded prompt ---
+The provided documents do not answer that question.
+
+While [doc-101] mentions that "the managing partner told the partnership that the priority for the next two years is margin, not size," it does not identify who the managing partner is or state how long they have held the role.
+
+refusal: True passed: True
+==================================================
+QUESTION: How does Harding & Voss's profitability compare with the Magic Circle firms?
+
+--- loose prompt ---
+# Profitability Comparison: Harding & Voss vs. Magic Circle Firms
+
+Based on the available document, I cannot provide a direct comparison of Harding & Voss's profitability with Magic Circle firms because [doc-101] does not contain financial data about Magic Circle firms.
+
+## What We Know About Harding & Voss
+
+The document provides these relevant profitability indicators [doc-101]:
+
+- **Revenue**: $1.24 billion (4.1% growth year-on-year)
+- **Technology spending**: 3.2% of revenue
+- **Pricing**: About 25% of fees on fixed/capped basis; write-offs remain "highest in the corporate team"
+- **Strategic focus**: Management has prioritized **margin over size** for the next two years
+
+## Key Profitability Insights
+
+The firm appears to be in a **margin-enhancement phase** rather than pursuing growth-driven profitability [doc-101]. Notable factors include:
+
+- Strong disputes group (41% of revenue) with pricing power—the firm has "resisted discounting its disputes rates"
+- Weaker corporate profitability, with "highest" write-offs in that practice area due to competitive pricing pressure
+- Improved associate retention (16% attrition) and stable partner retention, suggesting operational efficiency
+
+## Limitation
+
+To answer your question comprehensively, you would need financial data on Magic Circle firms' profitability metrics (revenue, profit per partner, margins, etc.), which is not included in the provided documentation.
+
+refusal: False passed: False
+UNCITED: # Profitability Comparison: Harding & Voss vs.
+UNCITED: Magic Circle Firms
+UNCITED: ## What We Know About Harding & Voss
+UNCITED: Revenue**: $1.24 billion (4.1% growth year-on-year)
+UNCITED: Technology spending**: 3.2% of revenue
+UNCITED: Pricing**: About 25% of fees on fixed/capped basis; write-offs remain "highest in the corporate team"
+UNCITED: Strategic focus**: Management has prioritized **margin over size** for the next two years
+UNCITED: ## Key Profitability Insights
+UNCITED: Notable factors include:
+UNCITED: Strong disputes group (41% of revenue) with pricing power—the firm has "resisted discounting its disputes rates"
+UNCITED: Weaker corporate profitability, with "highest" write-offs in that practice area due to competitive pricing pressure
+UNCITED: Improved associate retention (16% attrition) and stable partner retention, suggesting operational efficiency
+UNCITED: To answer your question comprehensively, you would need financial data on Magic Circle firms' profitability metrics (revenue, profit per partner, margins, etc.), which is not included in the provided documentation.
+
+--- grounded prompt ---
+The provided documents do not answer that question.
+
+The context provided contains detailed information about Harding & Voss's financial performance, but it does not include any comparative profitability data for Magic Circle firms. To answer your question, I would need documents containing profitability metrics for Magic Circle law firms.
+
+refusal: True passed: True

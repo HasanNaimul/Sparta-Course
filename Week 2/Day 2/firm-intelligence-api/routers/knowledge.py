@@ -1,19 +1,16 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from anthropic import APIStatusError, APITimeoutError, RateLimitError
-
+import grounding
 from routers import knowledge_store as knowledge
 import llm
 
 
 # Below this score, retrieved context is treated as not relevant
-RELEVANCE_FLOOR = 0.1
+RELEVANCE_FLOOR = 0.35
 
 
-router = APIRouter(
-    prefix="/knowledge",
-    tags=["knowledge"]
-)
+router = APIRouter(prefix="/knowledge",tags=["knowledge"])
 
 
 class Question(BaseModel):
@@ -48,7 +45,7 @@ def search(q: Question):
 
     except RuntimeError as e:
         raise HTTPException(
-            status_code=503,
+            status_code=409,
             detail=str(e),
         )
 
@@ -77,16 +74,10 @@ def ask(q: Question):
 
     try:
         # 1. Retrieve the most similar documents
-        hits = knowledge.search(
-            q.question,
-            q.top_k
-        )
+        hits = knowledge.search(q.question,q.top_k)
 
     except RuntimeError as e:
-        raise HTTPException(
-            status_code=503,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=503,detail=str(e))
 
     # 2. Keep only documents above the relevance threshold
     usable = [
@@ -119,22 +110,13 @@ def ask(q: Question):
         )
 
     except APITimeoutError:
-        raise HTTPException(
-            status_code=504,
-            detail="Answer provider timed out"
-        )
+        raise HTTPException(status_code=504,detail="Answer provider timed out")
 
     except RateLimitError:
-        raise HTTPException(
-            status_code=429,
-            detail="Answer provider rate limited"
-        )
+        raise HTTPException(status_code=429,detail="Answer provider rate limited")
 
     except APIStatusError:
-        raise HTTPException(
-            status_code=502,
-            detail="Answer provider service failed"
-        )
+        raise HTTPException(status_code=502,detail="Answer provider service failed")
 
     # 5. Return grounded answer plus sources and token usage
     return {
@@ -152,4 +134,5 @@ def ask(q: Question):
         "input_tokens": result["input_tokens"],
         "output_tokens": result["output_tokens"],
         "stop_reason": result["stop_reason"],
+        "grounding": grounding.check_citations(result["answer"], [h["id"] for h in usable])
     }
