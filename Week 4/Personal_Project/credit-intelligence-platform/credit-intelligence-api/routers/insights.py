@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from anthropic import APIStatusError, APITimeoutError, RateLimitError
 
 import llm
@@ -23,3 +24,10 @@ def borrower_summary(borrower_id: int):
         raise HTTPException(status_code=502, detail="Credit analysis provider failed")
 
     return {"borrower_id": borrower_id, "borrower_name": borrower["name"], **result}
+
+@router.get("/{borrower_id}/summary/stream")
+def borrower_summary_stream(borrower_id: int):
+    borrower = get_borrower_or_404(borrower_id)
+    metrics = calculate_borrower_metrics(borrower)
+
+    return StreamingResponse(llm.stream_borrower_summary(borrower, metrics), media_type="text/plain")
