@@ -5,6 +5,7 @@ If either changes, the collection is rebuilt from scratch.
 """
 
 import hashlib
+import time
 import chromadb
 import chunking
 from corpus import CORPUS_DOCUMENTS
@@ -27,6 +28,9 @@ def collection_for(strategy: str):
 
 def embed_batched(texts: list[str], input_type: str) -> tuple[list[list[float]], int]:
     """Embed texts in batches and return all vectors plus total token count."""
+    if not texts:
+        return [], 0
+
     vectors: list[list[float]] = []
     tokens = 0
 
@@ -36,11 +40,14 @@ def embed_batched(texts: list[str], input_type: str) -> tuple[list[list[float]],
         vectors.extend(batch_vectors)
         tokens += batch_tokens
 
+        # Free Voyage accounts are limited to roughly 3 requests per minute.
+        time.sleep(22)
+
     return vectors, tokens
 
 
 def fingerprint(chunks: list[dict]) -> str:
-    """Fingerprint changes if the model, chunk ids, text or order changes."""
+    """Fingerprint changes if the embedding model, chunk ids, text or order changes."""
     digest = hashlib.sha256(knowledge.EMBED_MODEL.encode())
 
     for chunk in chunks:
@@ -77,4 +84,31 @@ def build(strategy: str, force: bool = False) -> dict:
         metadatas=[{"doc_id": chunk["doc_id"], "title": chunk["title"], "fingerprint": fp} for chunk in chunks],
     )
 
-    return {"strategy": strategy, "chunks": len(chunks), "embedding_tokens": tokens, "rebuilt": True}
+    return {"strategy": strategy, "chunks": len(chunks), "embedding_tokens": tokens, "rebuilt": True, "fingerprint": fp}
+
+
+def search_with_vectors(strategy: str, query_vectors: list[list[float]], k: int) -> list[list[dict]]:
+    """Search a strategy using question vectors that have already been embedded."""
+    if strategy not in chunking.STRATEGIES:
+        raise ValueError(f"Unknown chunking strategy: {strategy}")
+
+    if k <= 0:
+        raise ValueError("k must be greater than zero")
+
+    if not query_vectors:
+        return []
+
+    col = collection_for(strategy)
+
+    if col.count() == 0:
+        raise RuntimeError(f"Index for '{strategy}' is empty, build it first")
+
+    result = col.query(query_embeddings=query_vectors, n_results=min(k, col.count()), include=["documents", "metadatas", "distances"])
+
+    return [
+        [
+            {"id": meta["doc_id"], "chunk_id": chunk_id, "title": meta["title"], "text": text, "score": 1 - distance}
+            for chunk_id, text, meta, distance in zip(ids, docs, metas, dists)
+        ]
+        for ids, docs, metas, dists in zip(result["ids"], result["documents"], result["metadatas"], result["distances"])
+    ]

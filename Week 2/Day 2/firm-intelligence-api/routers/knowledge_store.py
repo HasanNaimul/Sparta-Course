@@ -6,7 +6,7 @@
 import chromadb
 
 from routers.documents import DOCUMENTS
-from knowledge import embed_texts
+from knowledge import EMBED_MODEL, embed_texts
 
 
 # PersistentClient means the vectors are stored on disk
