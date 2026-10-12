@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from anthropic import APIStatusError, APITimeoutError, RateLimitError
-
+from config import settings
+from safety import financial_age_days, is_financial_data_stale
 import llm
 from calculations import calculate_borrower_metrics
 from routers.borrowers import get_borrower_or_404
@@ -38,6 +39,17 @@ def borrower_analysis(borrower_id: int):
     borrower = get_borrower_or_404(borrower_id)
     metrics = calculate_borrower_metrics(borrower)
 
+    age_days = financial_age_days(borrower["last_financials_date"])
+
+    if is_financial_data_stale(borrower["last_financials_date"], settings.financial_stale_days):
+        return {
+            "borrower_id": borrower_id,
+            "borrower_name": borrower["name"],
+            "analysis": None,
+            "refused": True,
+            "reason": f"Financial data is {age_days} days old and exceeds the {settings.financial_stale_days}-day freshness limit.",
+        }
+
     try:
         result = llm.analyse_borrower(borrower, metrics)
     except APITimeoutError:
@@ -47,4 +59,4 @@ def borrower_analysis(borrower_id: int):
     except APIStatusError:
         raise HTTPException(status_code=502, detail="Credit analysis provider failed")
 
-    return {"borrower_id": borrower_id, "borrower_name": borrower["name"], **result}
+    return {"borrower_id": borrower_id, "borrower_name": borrower["name"], "refused": False, **result}

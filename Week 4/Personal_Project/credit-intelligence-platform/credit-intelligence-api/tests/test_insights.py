@@ -57,3 +57,17 @@ def test_borrower_analysis(monkeypatch):
     assert body["analysis"]["covenant_status"] == "comfortable"
     assert body["analysis"]["recommended_action"] == "maintain"
     assert body["input_tokens"] == 250
+
+
+def test_stale_borrower_refuses_without_calling_model(monkeypatch):
+    def must_not_be_called(borrower, metrics):
+        raise AssertionError("Claude was called despite stale financial data")
+
+    monkeypatch.setattr(llm, "analyse_borrower", must_not_be_called)
+
+    response = client.get("/borrowers/3/analysis")
+    body = response.json()
+
+    assert response.status_code == 200
+    assert body["refused"] is True
+    assert body["analysis"] is None
