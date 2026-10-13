@@ -34,8 +34,8 @@ def safe_mean(values) -> float:
 def score_strategy(questions: list[dict], ranked: list[list[dict]]) -> dict:
     """Calculate Recall@k, MRR, context size and misses for one strategy."""
 
-    answerable = [(q, hits) for q, hits in zip(questions, ranked) if q["evidence"]]
-    unanswerable = [(q, hits) for q, hits in zip(questions, ranked) if not q["evidence"]]
+    answerable = [(q, hits) for q, hits in zip(questions, ranked) if q["doc_id"]]
+    unanswerable = [(q, hits) for q, hits in zip(questions, ranked) if not q["doc_id"]]
 
     ranks = [first_hit_rank(hits, q["evidence"]) for q, hits in answerable]
 

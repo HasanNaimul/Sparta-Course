@@ -10,7 +10,7 @@ import chromadb
 import chunking
 from corpus import CORPUS_DOCUMENTS
 from routers.documents import DOCUMENTS
-from routers import knowledge_store as knowledge
+import knowledge
 
 ALL_DOCUMENTS = DOCUMENTS + CORPUS_DOCUMENTS
 BATCH_SIZE = 128
@@ -112,3 +112,32 @@ def search_with_vectors(strategy: str, query_vectors: list[list[float]], k: int)
         ]
         for ids, docs, metas, dists in zip(result["ids"], result["documents"], result["metadatas"], result["distances"])
     ]
+
+# Things to note from our switch to ChromaDB
+
+# 1. embed_texts() is imported, not rewritten.
+#    The embedding provider has not changed.
+#    We still use Voyage AI to create the vectors.
+#    Only the place where those vectors are stored/searchable has changed.
+
+# 2. configuration=... is deliberate.
+#    We configure Chroma to use cosine distance because our previous
+#    retrieval logic was based on cosine similarity.
+
+# 3. Chroma returns distance, while our old code returned similarity.
+#    In Chroma:
+#        lower distance = closer / more similar
+#
+#    In our old system:
+#        higher similarity score = closer / more similar
+#
+#    We convert:
+#        similarity = 1 - distance
+
+# 4. We use upsert() instead of add().
+#    add() is for inserting new IDs and can fail if the ID already exists.
+#    upsert() means:
+#        insert if the ID is new
+#        update/overwrite if the ID already exists
+#
+#    This makes rebuilding the index safer.
