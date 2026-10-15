@@ -141,3 +141,16 @@ def search_with_vectors(strategy: str, query_vectors: list[list[float]], k: int)
 #        update/overwrite if the ID already exists
 #
 #    This makes rebuilding the index safer.
+
+
+def cosine_for(strategy: str, query_vector: list[float], chunk_ids: list[str]) -> dict[str, float]:
+    """Calculate cosine similarity for chunks that came from keyword search."""
+    if not chunk_ids:
+        return {}
+
+    stored = collection_for(strategy).get(ids=chunk_ids, include=["embeddings"])
+
+    return {
+        chunk_id: float(knowledge.cosine_similarity(query_vector, list(vector)))
+        for chunk_id, vector in zip(stored["ids"], stored["embeddings"])
+    }
