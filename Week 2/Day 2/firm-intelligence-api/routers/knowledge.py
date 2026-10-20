@@ -2,12 +2,13 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from anthropic import APIStatusError, APITimeoutError, RateLimitError
 
+import gate
 import grounding
-import hybrid
 import llm
+import settings
 from routers import knowledge_store as knowledge
 
-RELEVANCE_FLOOR = 0.35
+RELEVANCE_FLOOR = 0.45
 
 router = APIRouter(prefix="/knowledge", tags=["knowledge"])
 
@@ -19,18 +20,30 @@ class Question(BaseModel):
 
 @router.post("/index")
 def rebuild_index():
-    """Embed the corpus deliberately and store it in ChromaDB."""
-    tokens = knowledge.build_index()
-    return {"indexed": knowledge.count(), "embedding_tokens": tokens}
+    """Embed the corpus deliberately and store it in the local index."""
+    try:
+        tokens = knowledge.build_index()
+    except RuntimeError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+
+    return {
+        "indexed": knowledge.count(),
+        "embedding_tokens": tokens,
+    }
 
 
 @router.post("/search")
 def search(q: Question):
     """Retrieval only. No model call or generated text."""
     try:
-        return {"question": q.question, "results": knowledge.search(q.question, q.top_k)}
+        results = knowledge.search(q.question, q.top_k)
     except RuntimeError as e:
         raise HTTPException(status_code=409, detail=str(e))
+
+    return {
+        "question": q.question,
+        "results": results,
+    }
 
 
 @router.post("/ask")
@@ -41,7 +54,11 @@ def ask(q: Question):
     except RuntimeError as e:
         raise HTTPException(status_code=503, detail=str(e))
 
-    usable = [hit for hit in hits if hybrid.is_usable(hit, RELEVANCE_FLOOR)]
+    usable = [
+        hit
+        for hit in hits
+        if gate.is_usable(hit, RELEVANCE_FLOOR, settings.RERANK_FLOOR)
+    ]
 
     if not usable:
         return {
@@ -52,10 +69,13 @@ def ask(q: Question):
             "sources": [],
         }
 
-    context = "\n\n".join(f"[{h['id']}] {h['title']}\n{h['text']}" for h in usable)
+    retrieved_context = "\n\n".join(
+        f"[{h['id']}] {h['title']}\n{h['text']}"
+        for h in usable
+    )
 
     try:
-        result = llm.answer_from_context(q.question, context)
+        result = llm.answer_from_context(q.question, retrieved_context)
     except APITimeoutError:
         raise HTTPException(status_code=504, detail="Answer provider timed out")
     except RateLimitError:
@@ -63,13 +83,33 @@ def ask(q: Question):
     except APIStatusError:
         raise HTTPException(status_code=502, detail="Answer provider service failed")
 
+    sources = []
+
+    for hit in usable:
+        source = {
+            "id": hit["id"],
+            "title": hit["title"],
+            "score": round(hit["score"], 3),
+        }
+
+        if hit.get("reranker_score") is not None:
+            source["reranker_score"] = round(hit["reranker_score"], 3)
+
+        if hit.get("rrf") is not None:
+            source["rrf"] = hit["rrf"]
+
+        sources.append(source)
+
     return {
         "question": q.question,
         "answer": result["answer"],
         "refused": False,
-        "sources": [{"id": h["id"], "title": h["title"], "score": round(h["score"], 3)} for h in usable],
+        "sources": sources,
         "input_tokens": result["input_tokens"],
         "output_tokens": result["output_tokens"],
         "stop_reason": result["stop_reason"],
-        "grounding": grounding.check_citations(result["answer"], [h["id"] for h in usable]),
+        "grounding": grounding.check_citations(
+            result["answer"],
+            [h["id"] for h in usable],
+        ),
     }
