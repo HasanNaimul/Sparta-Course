@@ -77,3 +77,34 @@ def analyse_borrower(borrower: dict, metrics: dict) -> dict:
         "output_tokens": response.usage.output_tokens,
         "stop_reason": response.stop_reason,
     }
+
+
+def answer_from_context(question: str, context: str) -> dict:
+    """Answer using only retrieved evidence."""
+
+    response = client.messages.create(
+        model=settings.anthropic_model,
+        max_tokens=500,
+        system=(
+            "You are a credit intelligence analyst. "
+            "Answer using only the supplied documents. "
+            "Do not use outside knowledge or invent missing facts. "
+            "If the documents do not explicitly contain enough information to answer, "
+            'reply exactly: "The provided documents do not answer that question." '
+            "Cite supporting documents using their document id in square brackets, "
+            "for example [credit-doc-003]."
+        ),
+        messages=[
+            {
+                "role": "user",
+                "content": f"Question:\n{question}\n\nDocuments:\n{context}",
+            }
+        ],
+    )
+
+    return {
+        "answer": response.content[0].text,
+        "input_tokens": response.usage.input_tokens,
+        "output_tokens": response.usage.output_tokens,
+        "stop_reason": response.stop_reason,
+    }

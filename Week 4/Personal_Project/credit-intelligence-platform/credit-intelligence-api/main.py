@@ -1,3 +1,4 @@
+from routers import knowledge
 from fastapi import FastAPI
 from routers import borrowers, facilities, covenants, risk, insights
 
@@ -8,6 +9,7 @@ app.include_router(facilities.router)
 app.include_router(covenants.router)
 app.include_router(risk.router)
 app.include_router(insights.router)
+app.include_router(knowledge.router)
 
 
 @app.get("/health")
