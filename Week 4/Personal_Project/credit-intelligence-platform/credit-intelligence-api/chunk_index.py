@@ -4,64 +4,46 @@ import chromadb
 
 import chunking
 import knowledge
+from config import settings
 
-CHROMA_PATH = "./chroma_store"
-COLLECTION = "credit_intelligence"
-
-
-def collection():
-    client = chromadb.PersistentClient(path=CHROMA_PATH)
-    return client.get_or_create_collection(
-        name=COLLECTION,
-        metadata={"hnsw:space": "cosine"},
-    )
+DEFAULT_STRATEGY = "title_contextual_100"
+COLLECTION_PREFIX = "credit_intelligence"
 
 
-def build() -> int:
-    chunks = chunking.chunk_corpus()
+def collection(strategy: str = DEFAULT_STRATEGY):
+    client = chromadb.PersistentClient(path=settings.chroma_path)
+    return client.get_or_create_collection(name=f"{COLLECTION_PREFIX}_{strategy}", metadata={"hnsw:space": "cosine"})
+
+
+def build(strategy: str = DEFAULT_STRATEGY) -> int:
+    chunks = chunking.chunk_corpus(strategy)
     texts = [chunk["text"] for chunk in chunks]
-
     vectors, tokens = knowledge.embed_texts(texts, input_type="document")
 
-    collection().upsert(
+    collection(strategy).upsert(
         ids=[chunk["id"] for chunk in chunks],
         documents=texts,
         embeddings=vectors,
-        metadatas=[
-            {
-                "doc_id": chunk["doc_id"],
-                "title": chunk["title"],
-            }
-            for chunk in chunks
-        ],
+        metadatas=[{"doc_id": chunk["doc_id"], "title": chunk["title"], "type": chunk["type"]} for chunk in chunks],
     )
 
     return tokens
 
 
-def count() -> int:
-    return collection().count()
+def count(strategy: str = DEFAULT_STRATEGY) -> int:
+    return collection(strategy).count()
 
 
-def search_with_vector(query_vector: list[float], top_k: int = 3) -> list[dict]:
-    results = collection().query(
-        query_embeddings=[query_vector],
-        n_results=top_k,
-        include=["documents", "metadatas", "distances"],
-    )
-
+def search_with_vector(query_vector: list[float], top_k: int = 3, strategy: str = DEFAULT_STRATEGY) -> list[dict]:
+    results = collection(strategy).query(query_embeddings=[query_vector], n_results=top_k, include=["documents", "metadatas", "distances"])
     hits = []
 
-    for chunk_id, text, metadata, distance in zip(
-        results["ids"][0],
-        results["documents"][0],
-        results["metadatas"][0],
-        results["distances"][0],
-    ):
+    for chunk_id, text, metadata, distance in zip(results["ids"][0], results["documents"][0], results["metadatas"][0], results["distances"][0]):
         hits.append({
             "chunk_id": chunk_id,
             "doc_id": metadata["doc_id"],
             "title": metadata["title"],
+            "type": metadata["type"],
             "text": text,
             "score": 1 - distance,
         })
@@ -69,6 +51,6 @@ def search_with_vector(query_vector: list[float], top_k: int = 3) -> list[dict]:
     return hits
 
 
-def search(question: str, top_k: int = 3) -> list[dict]:
+def search(question: str, top_k: int = 3, strategy: str = DEFAULT_STRATEGY) -> list[dict]:
     vectors, _ = knowledge.embed_texts([question], input_type="query")
-    return search_with_vector(vectors[0], top_k)
+    return search_with_vector(vectors[0], top_k, strategy)
