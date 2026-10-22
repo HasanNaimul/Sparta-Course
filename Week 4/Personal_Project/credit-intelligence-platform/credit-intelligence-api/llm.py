@@ -1,6 +1,6 @@
 import anthropic
 from anthropic import APIStatusError, APITimeoutError, RateLimitError
-
+import grounding
 from config import settings
 from models import CreditAssessment
 
@@ -80,26 +80,22 @@ def analyse_borrower(borrower: dict, metrics: dict) -> dict:
 
 
 def answer_from_context(question: str, context: str) -> dict:
-    """Answer using only retrieved evidence."""
+    """Answer only when the retrieved evidence explicitly supports the requested fact."""
 
     response = client.messages.create(
         model=settings.anthropic_model,
         max_tokens=500,
         system=(
-            "You are a credit intelligence analyst. "
-            "Answer using only the supplied documents. "
-            "Do not use outside knowledge or invent missing facts. "
-            "If the documents do not explicitly contain enough information to answer, "
-            'reply exactly: "The provided documents do not answer that question." '
-            "Cite supporting documents using their document id in square brackets, "
-            "for example [credit-doc-003]."
+            "You are a careful credit intelligence analyst. "
+            "Use only the supplied documents. Do not use outside knowledge, assumptions or plausible inference. "
+            "A document being about the correct borrower, facility or covenant is not enough; the evidence must explicitly support the specific answer requested. "
+            "Explicit negative evidence counts as an answer. For example, if a document explicitly states that a refinancing has not been agreed, then a question asking whether refinancing has been completed should be answered 'No' using that evidence. "
+            "If the evidence explicitly answers the question, answer concisely and cite the supporting document id in square brackets. "
+            f'Only if the requested fact is genuinely absent, unclear or conflicting, reply exactly and only: "{grounding.REFUSAL}" '
+            "Never write the refusal sentence before or alongside a supported answer. "
+            "Do not infer missing ratings, lenders, auditors, collateral, transaction details or other absent facts."
         ),
-        messages=[
-            {
-                "role": "user",
-                "content": f"Question:\n{question}\n\nDocuments:\n{context}",
-            }
-        ],
+        messages=[{"role": "user", "content": f"Question:\n{question}\n\nDocuments:\n{context}"}],
     )
 
     return {

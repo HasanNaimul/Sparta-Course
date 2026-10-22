@@ -49,11 +49,7 @@ def ask(q: Question):
     except RuntimeError as error:
         raise HTTPException(status_code=503, detail=str(error))
 
-    usable = [
-        hit
-        for hit in hits
-        if gate.is_usable(hit, settings.relevance_floor)
-    ]
+    usable = [hit for hit in hits if gate.is_usable(hit, settings.relevance_floor)]
 
     if not usable:
         return {
@@ -75,7 +71,7 @@ def ask(q: Question):
     except APIStatusError:
         raise HTTPException(status_code=502, detail="Answer provider service failed")
 
-    if result["answer"].strip() == grounding.REFUSAL:
+    if grounding.is_refusal(result["answer"]):
         return {
             "question": q.question,
             "answer": None,
@@ -92,7 +88,7 @@ def ask(q: Question):
             {
                 "id": hit["doc_id"],
                 "title": hit["title"],
-                "score": round(hit["score"], 3),
+                "score": round(hit["score"], 3) if hit.get("score") is not None else None,
             }
             for hit in usable
         ],
