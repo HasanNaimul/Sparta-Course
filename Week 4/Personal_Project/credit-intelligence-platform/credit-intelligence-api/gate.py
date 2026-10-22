@@ -6,8 +6,4 @@ def is_usable(hit: dict, cosine_floor: float) -> bool:
         return True
 
     score = hit.get("score")
-
-    if score is None:
-        return False
-
-    return score >= cosine_floor
+    return score is not None and score >= cosine_floor

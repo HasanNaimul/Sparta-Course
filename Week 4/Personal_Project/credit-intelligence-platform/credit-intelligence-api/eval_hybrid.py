@@ -1,75 +1,88 @@
-"""Evaluate hybrid retrieval against the labelled Credit Intelligence questions."""
+"""Evaluate final hybrid retrieval against the expanded Credit Intelligence eval set."""
 
-from collections import defaultdict
+import time
+
+import voyageai
 
 import hybrid
 import knowledge
 from eval_set import EVAL_SET
 
+STRATEGY = "title_contextual_100"
+BATCH_SIZE = 20
+BATCH_PAUSE = 22
+RETRY_SECONDS = 25
 
-def evaluate(top_k: int = 3) -> None:
+
+def embed_queries(questions: list[str]) -> tuple[list[list[float]], int]:
+    vectors, total_tokens = [], 0
+
+    for start in range(0, len(questions), BATCH_SIZE):
+        batch = questions[start:start + BATCH_SIZE]
+
+        while True:
+            try:
+                batch_vectors, tokens = knowledge.embed_texts(batch, input_type="query")
+                vectors.extend(batch_vectors)
+                total_tokens += tokens
+                break
+            except voyageai.error.RateLimitError:
+                print(f"Voyage rate limit reached. Retrying in {RETRY_SECONDS} seconds...")
+                time.sleep(RETRY_SECONDS)
+
+        if start + BATCH_SIZE < len(questions):
+            time.sleep(BATCH_PAUSE)
+
+    return vectors, total_tokens
+
+
+def evaluate() -> None:
     answerable = [q for q in EVAL_SET if q["doc_id"]]
+    query_vectors, tokens = embed_queries([q["question"] for q in answerable])
 
-    questions = [q["question"] for q in answerable]
-    query_vectors, tokens = knowledge.embed_texts(questions, input_type="query")
-
-    recall_at_1 = 0
-    recall_at_3 = 0
-    reciprocal_rank_total = 0.0
-    by_kind = defaultdict(lambda: {"total": 0, "r1": 0, "r3": 0})
+    r1 = r3 = r5 = 0
+    mrr = 0.0
+    exact_total = exact_r1 = 0
     misses = []
+    wrong_top = []
 
-    for q, query_vector in zip(answerable, query_vectors):
-        hits = hybrid.search_with_vector(q["question"], query_vector, top_k=top_k)
-
+    for q, vector in zip(answerable, query_vectors):
+        hits = hybrid.search_with_vector(q["question"], vector, top_k=5, strategy=STRATEGY)
         doc_ids = [hit["doc_id"] for hit in hits]
-        expected = q["doc_id"]
 
+        expected = q["doc_id"]
         rank = doc_ids.index(expected) + 1 if expected in doc_ids else None
 
-        if rank == 1:
-            recall_at_1 += 1
-
-        if rank is not None and rank <= 3:
-            recall_at_3 += 1
+        r1 += rank == 1
+        r3 += rank is not None and rank <= 3
+        r5 += rank is not None and rank <= 5
 
         if rank:
-            reciprocal_rank_total += 1 / rank
+            mrr += 1 / rank
         else:
             misses.append(q["id"])
 
-        kind = by_kind[q["kind"]]
-        kind["total"] += 1
+        if rank != 1:
+            wrong_top.append((q["id"], rank, doc_ids[0] if doc_ids else None))
 
-        if rank == 1:
-            kind["r1"] += 1
+        if q["kind"] == "exact-id":
+            exact_total += 1
+            exact_r1 += rank == 1
 
-        if rank is not None and rank <= 3:
-            kind["r3"] += 1
-
-        top_doc = doc_ids[0] if doc_ids else None
-        print(f'{q["id"]}: expected={expected} rank={rank} top={top_doc}')
+        print(f'{q["id"]}: expected={expected} rank={rank} top={doc_ids[0] if doc_ids else None}')
 
     total = len(answerable)
 
-    print("\nOverall")
-    print(f"Questions: {total}")
-    print(f"Embedding tokens: {tokens}")
-    print(f"Recall@1: {recall_at_1 / total:.3f}")
-    print(f"Recall@3: {recall_at_3 / total:.3f}")
-    print(f"MRR:      {reciprocal_rank_total / total:.3f}")
-    print(f"Misses:   {misses or 'none'}")
-
-    print("\nBy kind")
-
-    for kind, values in sorted(by_kind.items()):
-        total_kind = values["total"]
-
-        print(
-            f"{kind:12} "
-            f"R@1={values['r1'] / total_kind:.3f} "
-            f"R@3={values['r3'] / total_kind:.3f}"
-        )
+    print("\nResults")
+    print(f"Questions:       {total}")
+    print(f"Embedding tokens:{tokens}")
+    print(f"Recall@1:        {r1 / total:.3f}")
+    print(f"Recall@3:        {r3 / total:.3f}")
+    print(f"Recall@5:        {r5 / total:.3f}")
+    print(f"MRR:             {mrr / total:.3f}")
+    print(f"Exact-ID R@1:    {exact_r1 / exact_total:.3f}")
+    print(f"Misses:          {misses or 'none'}")
+    print(f"Wrong top hits:  {wrong_top or 'none'}")
 
 
 if __name__ == "__main__":
