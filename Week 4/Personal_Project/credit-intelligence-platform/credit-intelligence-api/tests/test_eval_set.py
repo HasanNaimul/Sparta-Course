@@ -35,3 +35,15 @@ def test_unanswerable_questions_have_no_evidence():
 def test_eval_set_covers_important_query_types():
     kinds = {q["kind"] for q in EVAL_SET}
     assert {"numeric", "exact-id", "negation", "policy", "unanswerable"} <= kinds
+
+def test_eval_set_has_enough_questions_for_retrieval_evaluation():
+    assert len(EVAL_SET) >= 50
+
+
+def test_eval_set_has_enough_unanswerable_questions():
+    assert sum(q["doc_id"] is None for q in EVAL_SET) >= 10
+
+
+def test_eval_set_covers_harder_query_types():
+    kinds = {q["kind"] for q in EVAL_SET}
+    assert {"exact-id", "temporal", "cross-document", "negation", "unanswerable"} <= kinds

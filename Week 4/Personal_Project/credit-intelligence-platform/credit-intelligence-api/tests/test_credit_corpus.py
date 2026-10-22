@@ -16,3 +16,11 @@ def test_credit_documents_have_required_fields():
         assert doc["title"]
         assert doc["type"]
         assert doc["body"]
+
+def test_credit_corpus_is_large_enough_for_retrieval_evaluation():
+    assert len(CREDIT_DOCUMENTS) >= 20
+
+
+def test_credit_corpus_contains_multiple_documents_for_same_borrower():
+    northbridge = [doc for doc in CREDIT_DOCUMENTS if "Northbridge Components" in doc["title"]]
+    assert len(northbridge) >= 3
