@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     voyage_embed_model: str
 
     relevance_floor: float = 0.35
-    rerank_floor: float = 2.0
+    rerank_floor: float = 2.5
     max_agent_iterations: int = 4
     financial_stale_days: int = 180
     chroma_path: str = "./chroma_store"

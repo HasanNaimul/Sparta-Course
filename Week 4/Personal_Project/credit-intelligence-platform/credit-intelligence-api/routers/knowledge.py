@@ -49,7 +49,7 @@ def ask(q: Question):
     except RuntimeError as error:
         raise HTTPException(status_code=503, detail=str(error))
 
-    usable = [hit for hit in hits if gate.is_usable(hit, settings.relevance_floor)]
+    usable = [hit for hit in hits if gate.is_usable(hit, settings.relevance_floor, settings.rerank_floor)]
 
     if not usable:
         return {
