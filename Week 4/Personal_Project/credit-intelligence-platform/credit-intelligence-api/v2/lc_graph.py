@@ -1,9 +1,10 @@
 """LangGraph workflow for Credit Intelligence."""
-import grounding
+
 from langchain_core.messages import SystemMessage
-from langgraph.graph import END, START, MessagesState, StateGraph
+from langgraph.graph import START, MessagesState, StateGraph
 from langgraph.prebuilt import ToolNode, tools_condition
 
+import grounding
 from v2.lc_model import chat_model
 from v2.lc_tools import search_knowledge_base
 
@@ -18,21 +19,24 @@ SYSTEM_PROMPT = (
 )
 
 TOOLS = [search_knowledge_base]
-MODEL = chat_model().bind_tools(TOOLS)
 
 
-def call_model(state: MessagesState) -> dict:
-    response = MODEL.invoke([SystemMessage(content=SYSTEM_PROMPT), *state["messages"]])
-    return {"messages": [response]}
+def build_graph(model=None, tools=None):
+    tools = tools or TOOLS
+    model = model or chat_model().bind_tools(tools)
+
+    def call_model(state: MessagesState) -> dict:
+        response = model.invoke([SystemMessage(content=SYSTEM_PROMPT), *state["messages"]])
+        return {"messages": [response]}
+
+    builder = StateGraph(MessagesState)
+    builder.add_node("model", call_model)
+    builder.add_node("tools", ToolNode(tools))
+    builder.add_edge(START, "model")
+    builder.add_conditional_edges("model", tools_condition)
+    builder.add_edge("tools", "model")
+
+    return builder.compile()
 
 
-builder = StateGraph(MessagesState)
-
-builder.add_node("model", call_model)
-builder.add_node("tools", ToolNode(TOOLS))
-
-builder.add_edge(START, "model")
-builder.add_conditional_edges("model", tools_condition, {"tools": "tools", END: END})
-builder.add_edge("tools", "model")
-
-graph = builder.compile()
+graph = build_graph()
