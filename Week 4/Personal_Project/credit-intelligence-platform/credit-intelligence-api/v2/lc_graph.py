@@ -1,6 +1,7 @@
 """LangGraph workflow for Credit Intelligence."""
 
 from langchain_core.messages import SystemMessage
+from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import START, MessagesState, StateGraph
 from langgraph.prebuilt import ToolNode, tools_condition
 
@@ -21,7 +22,7 @@ SYSTEM_PROMPT = (
 TOOLS = [search_knowledge_base]
 
 
-def build_graph(model=None, tools=None):
+def build_graph(model=None, tools=None, checkpointer=None):
     tools = tools or TOOLS
     model = model or chat_model().bind_tools(tools)
 
@@ -36,7 +37,7 @@ def build_graph(model=None, tools=None):
     builder.add_conditional_edges("model", tools_condition)
     builder.add_edge("tools", "model")
 
-    return builder.compile()
+    return builder.compile(checkpointer=checkpointer)
 
 
-graph = build_graph()
+graph = build_graph(checkpointer=InMemorySaver())

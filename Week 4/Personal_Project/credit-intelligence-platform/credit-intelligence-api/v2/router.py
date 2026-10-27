@@ -1,5 +1,7 @@
 """FastAPI v2 routes powered by LangGraph."""
 
+from uuid import uuid4
+
 from anthropic import APIStatusError, APITimeoutError, RateLimitError
 from fastapi import APIRouter, HTTPException
 from langchain_core.messages import ToolMessage
@@ -13,12 +15,16 @@ router = APIRouter(prefix="/v2/knowledge", tags=["v2-knowledge"])
 
 class Question(BaseModel):
     question: str = Field(min_length=3)
+    thread_id: str | None = Field(default=None, max_length=100)
 
 
 @router.post("/ask")
 def ask(q: Question):
+    thread_id = q.thread_id or str(uuid4())
+    config = {"configurable": {"thread_id": thread_id}}
+
     try:
-        result = graph.invoke({"messages": [("user", q.question)]})
+        result = graph.invoke({"messages": [("user", q.question)]}, config)
     except APITimeoutError:
         raise HTTPException(status_code=504, detail="Answer provider timed out")
     except RateLimitError:
@@ -35,6 +41,7 @@ def ask(q: Question):
     if grounding.is_refusal(answer):
         return {
             "question": q.question,
+            "thread_id": thread_id,
             "answer": None,
             "refused": True,
             "reason": grounding.REFUSAL,
@@ -43,6 +50,7 @@ def ask(q: Question):
 
     return {
         "question": q.question,
+        "thread_id": thread_id,
         "answer": answer,
         "refused": False,
         "tools_used": tools_used,
