@@ -1,5 +1,5 @@
 """LangGraph workflow for Credit Intelligence."""
-
+import grounding
 from langchain_core.messages import SystemMessage
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.prebuilt import ToolNode, tools_condition
@@ -9,10 +9,12 @@ from v2.lc_tools import search_knowledge_base
 
 SYSTEM_PROMPT = (
     "You are a careful credit intelligence analyst. "
-    "Use the search_knowledge_base tool whenever the user asks about borrowers, facilities, covenants, policies or credit-risk information. "
-    "Use only retrieved evidence for factual Credit Intelligence answers. "
-    "Do not invent missing facts. If the retrieved evidence does not answer the question, say that the provided documents do not answer it. "
-    "Cite supporting document ids in square brackets."
+    "Use search_knowledge_base whenever the user asks about borrowers, facilities, covenants, policies or credit-risk information. "
+    "Use only retrieved evidence. Do not use outside knowledge or infer missing facts. "
+    "The evidence must explicitly contain the specific fact requested. "
+    "Explicit negative evidence counts as an answer. "
+    f'If the tool returns "{grounding.REFUSAL}", or the retrieved evidence does not explicitly answer the question, reply exactly and only: "{grounding.REFUSAL}" '
+    "Otherwise answer only the question asked, keep the answer concise and cite the supporting document id in square brackets."
 )
 
 TOOLS = [search_knowledge_base]
